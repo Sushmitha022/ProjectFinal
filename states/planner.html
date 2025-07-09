@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Itinerary Planner</title>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    body {
+      font-family: 'Quicksand', sans-serif;
+      background: linear-gradient(to right, #e0f7fa, #ffffff);
+      margin: 0;
+      padding: 40px;
+    }
+
+    .planner-container {
+      max-width: 600px;
+      background: white;
+      margin: auto;
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+      text-align: center;
+      color: #0277bd;
+    }
+
+    label {
+      font-weight: bold;
+      color: #01579b;
+    }
+
+    input, select {
+      margin: 8px 0;
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    button {
+      background: #0288d1;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      margin-top: 20px;
+      font-size: 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background: #0277bd;
+    }
+
+    #itinerary-preview {
+      background: #e1f5fe;
+      padding: 20px;
+      margin-top: 20px;
+      border-radius: 10px;
+      white-space: pre-wrap;
+      font-family: 'Times New Roman', Times, serif;
+      font-size: 25px;
+    }
+
+    .success-msg {
+      color: green;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    .tooltip-icon {
+    display: inline-block;
+    position: relative;
+    cursor: help;
+    color: #0277bd;
+    margin-left: 5px;
+  }
+
+  .tooltip-icon::after {
+    content: "₹500–₹1500 per person/day (approx.)";
+    position: absolute;
+    background: #333;
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    top: 25px;
+    left: -20px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: 0.3s;
+    z-index: 10;
+  }
+
+  .tooltip-icon:hover::after {
+    opacity: 1;
+  }
+  </style>
+</head>
+<body>
+
+  <div class="planner-container">
+    <h2>Itinerary Planner 🧭</h2>
+    <form id="itinerary-form">
+      <label for="state">Select State:</label><br>
+      <select id="state-select" required>
+        <option value="">-- Choose a State --</option>
+        <option value="Andhra Pradesh">Andhra Pradesh</option>
+        <option value="Gujarat">Gujarat</option>
+        <option value="West Bengal">West Bengal</option>
+        <option value="Odisha">Odisha</option>
+        <option value="Karnataka">Karnataka</option>
+        <option value="Maharastra">Maharastra</option>
+        <option value="Goa">Goa</option>
+        <option value="Kerala">Kerala</option>
+        <option value="Tamilnadu">Tamilnadu</option>
+      </select><br><br>
+
+      <label for="beach">Select Beach:</label><br>
+      <select id="beach-select" required>
+        <option value="">-- Choose a Beach --</option>
+      </select><br><br>
+
+      <label>Email (for reminder):</label><br>
+     <input type="email" id="user-email" required readonly>
+<br>
+
+      <label>
+        <input type="checkbox" id="send-reminder">
+        Send me a reminder on my start date
+      </label>
+
+     <label for="num-persons">
+  Number of Persons:
+  <span class="tooltip-icon">&#9432;</span>
+</label><br>
+
+      <input type="number" id="num-persons" min="1" required><br><br>
+
+      <br><br><label>Travel Dates:</label><br>
+      From: <input type="date" id="from-date"><br>
+      To: <input type="date" id="to-date"><br><br>
+
+      <button type="button" onclick="generateItinerary()">Generate Itinerary</button>
+    </form>
+
+    <div id="itinerary-preview"></div>
+    <div class="success-msg" id="success-message"></div>
+    <button id="download-btn" style="display:none;" onclick="downloadPDF()">Download PDF</button>
+  </div>
+
+  <script>
+    const budgetRates = {
+  default: { min: 500, max: 1500 },
+
+  // State-level rates
+  "Andhra Pradesh": { min: 600, max: 1400 },
+  "Gujarat": { min: 700, max: 1600 },
+  "West Bengal": { min: 550, max: 1300 },
+  "Odisha": { min: 600, max: 1500 },
+  "Karnataka": { min: 750, max: 1700 },
+  "Maharastra": { min: 850, max: 1900 },
+  "Goa": { min: 1000, max: 2500 },
+  "Kerala": { min: 900, max: 2200 },
+  "Tamilnadu": { min: 650, max: 1600 },
+
+  // Beach-level overrides (optional but more specific)
+  "Palolem beach": { min: 1200, max: 2600 },
+  "Kovalam beach": { min: 950, max: 2100 },
+  "Rameswaram beach": { min: 700, max: 1500 }
+};
+
+    const beachData = {
+      "Andhra Pradesh": ["Rishikonda", "Rama Krishna", "Bheemunipatnam"],
+      "Gujarat": ["Mandvi", "Madhavpur", "Diu"],
+      "West Bengal": ["Digha", "Mandarmani", "Tajpur"],
+      "Odisha": ["Puri", "Chandrabhaga", "Gopalpur"],
+      "Karnataka": ["Gokarna's Om", "Kudle", "Malpe"],
+      "Maharastra": ["Juhu", "Tarkarli", "Kashid"],
+      "Goa": ["Palolem beach", "Calangute beach", "Anjuna beach"],
+      "Kerala": ["Kovalam beach", "Varkala beach", "Alleppey beach"],
+      "Tamilnadu": ["Marina Beach", "Rameswaram beach", "Pondicherry beach"]
+    };
+
+    const attractions = {
+      "Rishikonda": ["Rushikonda Beach", "Kailasagiri Hill", "Submarine Museum"],
+      "Rama Krishna": ["RK Beach", "Victory at Sea Memorial", "INS Kursura"],
+      "Bheemunipatnam": ["Old Dutch Cemetery", "Bheemili Beach", "Light House"],
+      "Mandvi": ["Mandvi Beach", "Vijay Vilas Palace", "Shyamji Krishna Verma Memorial"],
+      "Madhavpur": ["Madhavpur Beach", "Madhavraiji Haveli", "Somnath Temple Nearby"],
+      "Diu": ["Nagoa Beach", "Diu Fort", "INS Khukri Memorial"],
+      "Digha": ["Udaipur Beach", "Amarabati Park", "Science Centre"],
+      "Mandarmani": ["Mandarmani Beach", "Water Sports", "Sunset Point"],
+      "Tajpur": ["Red Crabs Beach", "Sea View Point", "Fishing Boats View"],
+      "Puri": ["Jagannath Temple", "Puri Beach", "Chilika Lake"],
+      "Chandrabhaga": ["Chandrabhaga Beach", "Konark Temple", "Marine Drive"],
+      "Gopalpur": ["Gopalpur Beach", "Lighthouse", "Old Jetty"],
+      "Gokarna's Om": ["Om Beach", "Half Moon Beach", "Paradise Beach"],
+      "Kudle": ["Kudle Beach", "Hillside View", "Yoga Retreats"],
+      "Malpe": ["St. Mary’s Island", "Malpe Beach", "Sea Walk"],
+      "Juhu": ["Juhu Beach", "ISKCON Temple", "Street Food"],
+      "Tarkarli": ["Tarkarli Beach", "Scuba Diving", "Backwaters"],
+      "Kashid": ["Kashid Beach", "Murud Janjira Fort", "Revdanda Beach"],
+      "Palolem beach": ["Silent Disco", "Boat Rides", "Shacks"],
+      "Calangute beach": ["Market Street", "Water Sports", "Baga Proximity"],
+      "Anjuna beach": ["Flea Market", "Nightlife", "Curlies Beach Shack"],
+      "Kovalam beach": ["Lighthouse Beach", "Halcyon Castle", "Vizhinjam Marine Aquarium"],
+      "Varkala beach": ["Varkala Cliff", "Janardanaswamy Temple", "Papanasam Beach"],
+      "Alleppey beach": ["Backwaters", "Houseboats", "Alappuzha Beach"],
+      "Marina Beach": ["Marina Lighthouse", "Senmozhi Poonga", "Kapaleeshwarar Temple"],
+      "Rameswaram beach": ["Dhanushkodi", "Ramanathaswamy Temple", "Pamban Bridge"],
+      "Pondicherry beach": ["Promenade Beach", "French Colony", "Aurobindo Ashram"]
+    };
+
+    document.getElementById("state-select").addEventListener("change", function () {
+      const selectedState = this.value;
+      const beachSelect = document.getElementById("beach-select");
+      beachSelect.innerHTML = '<option value="">-- Choose a Beach --</option>';
+      if (beachData[selectedState]) {
+        beachData[selectedState].forEach(beach => {
+          const opt = document.createElement("option");
+          opt.value = beach;
+          opt.innerText = beach;
+          beachSelect.appendChild(opt);
+        });
+      }
+    });
+
+   function generateItinerary() {
+  const state = document.getElementById('state-select').value;
+  const beach = document.getElementById('beach-select').value;
+  const fromDate = document.getElementById('from-date').value;
+  const toDate = document.getElementById('to-date').value;
+  const email = document.getElementById('user-email').value.trim();
+  const sendReminder = document.getElementById('send-reminder').checked;
+  const numPersons = parseInt(document.getElementById('num-persons').value);
+
+  if (!state || !beach || !fromDate || !toDate || !email || !numPersons) {
+    alert("Please fill all fields.");
+    return;
+  }
+
+  if (!validateEmail(email)) {
+    alert("Please enter a valid email address.");
+    return;
+  }
+
+  // 🔢 Calculate trip duration
+  const start = new Date(fromDate);
+  const end = new Date(toDate);
+  const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+
+  if (days <= 0) {
+    alert("Invalid date range.");
+    return;
+  }
+
+  // 🔁 Get dynamic budget rates based on state or beach
+let minPerPersonPerDay = budgetRates.default.min;
+let maxPerPersonPerDay = budgetRates.default.max;
+
+// Priority: Beach > State > Default
+if (budgetRates[beach]) {
+  minPerPersonPerDay = budgetRates[beach].min;
+  maxPerPersonPerDay = budgetRates[beach].max;
+} else if (budgetRates[state]) {
+  minPerPersonPerDay = budgetRates[state].min;
+  maxPerPersonPerDay = budgetRates[state].max;
+}
+
+// 💰 Budget calculations
+const minBudget = minPerPersonPerDay * numPersons * days;
+const maxBudget = maxPerPersonPerDay * numPersons * days;
+
+const minPerPersonTotal = minPerPersonPerDay * days;
+const maxPerPersonTotal = maxPerPersonPerDay * days;
+
+  // 📝 Prepare itinerary text
+  let itinerary = `🗓 Travel Plan\nFrom: ${fromDate} To: ${toDate}\n\n`;
+  itinerary += `👥 Number of Persons: ${numPersons}\n`;
+  itinerary += `📍 State: ${state}\n🌊 Beach: ${beach}\n\n`;
+  itinerary += `Nearby Attractions:\n`;
+  if (attractions[beach]) {
+    attractions[beach].forEach(place => itinerary += ` - ${place}\n`);
+  }
+
+  itinerary += `\n📧 Reminder Email: ${email}`;
+  if (sendReminder) {
+    itinerary += `\n🔔 Reminder will be sent on: ${fromDate}`;
+  }
+
+  // 💸 Add budget info
+  // 💸 Add budget info
+itinerary += `\n\n💸 Per Person Budget:\nMinimum: ₹${minPerPersonTotal}\nMaximum: ₹${maxPerPersonTotal}`;
+itinerary += `\n\n💰 Total Estimated Budget:\nMinimum: ₹${minBudget}\nMaximum: ₹${maxBudget}`;
+
+
+  // Show preview
+  document.getElementById('itinerary-preview').innerText = itinerary;
+  document.getElementById('download-btn').style.display = 'inline';
+  document.getElementById('success-message').innerText = "Itinerary generated successfully!";
+
+  // Send to backend
+  fetch('http://localhost:3000/plan', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      user_email: email,
+      beaches: beach,
+      start_date: fromDate,
+      end_date: toDate,
+      persons: numPersons,
+      budget_range: { min: minBudget, max: maxBudget }
+    })
+  }).then(res => {
+    if (res.ok) {
+      console.log("✅ Itinerary saved in database.");
+    } else {
+      console.error("❌ Failed to save. Status:", res.status);
+    }
+  }).catch(err => {
+    console.error("❌ Network error:", err);
+  });
+}
+
+
+  function validateEmail(email) {
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return regex.test(email);
+  }
+</script>
+<script>
+  const userEmail = localStorage.getItem('loggedInUser');
+
+if (!userEmail) {
+  alert("⚠️ Please login to access the itinerary planner.");
+  window.location.href = "../login.html";
+} else {
+  document.getElementById("user-email").value = userEmail;
+}
+
+</script>
+
+<script>
+  window.addEventListener("DOMContentLoaded", () => {
+    const today = new Date().toISOString().split("T")[0];
+    document.getElementById("from-date").setAttribute("min", today);
+    document.getElementById("to-date").setAttribute("min", today);
+  });
+</script>
+
+</body>
+</html>

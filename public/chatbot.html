@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Beach Tour Chatbot</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #eef;
+      padding: 20px;
+    }
+
+    #chatbox {
+      width: 400px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 15px #aaa;
+    }
+
+    #messages {
+      height: 300px;
+      overflow-y: auto;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      padding: 10px;
+      border-radius: 5px;
+      background: #f9f9f9;
+    }
+
+    .msg {
+      margin: 5px 0;
+      padding: 5px 10px;
+      border-radius: 10px;
+      max-width: 80%;
+      word-wrap: break-word;
+    }
+
+    .user {
+      background-color: #d0eaff;
+      text-align: right;
+      margin-left: auto;
+    }
+
+    .bot {
+      background-color: #d1f7d1;
+      text-align: left;
+      margin-right: auto;
+    }
+
+    input[type="text"] {
+      width: 75%;
+      padding: 8px;
+      margin-right: 5px;
+      border-radius: 5px;
+      border: 1px solid #aaa;
+    }
+
+    button {
+      padding: 8px 15px;
+      background-color: #3366ff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    @media screen and (max-width: 500px) {
+      #chatbox {
+        width: 90%;
+      }
+
+      input[type="text"] {
+        width: 70%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="chatbox" style="position: relative;">
+  <!-- ✅ Close Button (top right corner) -->
+  <button onclick="closeChatbot()" style="
+    position: absolute;
+    top: 5px;
+    right: 10px;
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: #888;
+    cursor: pointer;
+  " title="Close Chatbot">&times;</button>
+
+  <!-- ✅ Chatbot Header -->
+  <h3 style="margin: 0; padding-right: 30px;">🌴 Beach Tour Chatbot</h3>
+    <div id="messages"></div>
+    <input type="text" id="userInput" placeholder="Ask about beaches...">
+    <button onclick="sendMessage()">Send</button>
+</div>
+
+<script>
+document.getElementById("userInput").addEventListener("keypress", e => {
+  if (e.key === "Enter") sendMessage();
+});
+
+// Known beach pages (use full beach names as keys)
+const beachPages = {
+ "kovalam beach": "states/kovalam.html",
+        "kerala beaches": "states/kerala.html",
+        "varkala beach": "states/varkala.html",
+        "alleppey beach": "states/alleppey.html",
+        "tamil nadu beaches": "states/tamil.html",
+        "marina beach": "states/marina.html",
+        "rameswaram beach": "states/rameswaram.html",
+        "pondicherry beach": "states/pondicherry.html",
+        "karnataka beaches": "states/karnataka.html",
+        "om beach": "states/om.html",
+        "kudle beach": "states/kudle.html.",
+        "malpe beach": "states/malpe.html",
+        "andhra pradesh beaches": "states/ap.html",
+        "rushikonda beach": "states/rushikonda.html",
+        "rama krishna beach": "states/rkbeach.html",
+        "bheemunipatnam beach": "states/bheemu.html",
+        "goa beaches": "states/goa.html",
+        "palolem beach": "states/palolem.html",
+        "calangute beach": "states/calangute.html",
+        "anjuna beach":"states/anjuna.html",
+        "maharashtra beaches": "states/maharashtra.html",
+        "juhu beach": "states/juhu.html",
+        "tarkarli beach": "states/tarkarli.html",
+        "kashid beach ": "states/kashid.html",
+        "gujarat beaches": "states/gujarat.html",
+        "mandvi beach": "states/mandvi.html",
+        "madhavpur beach": "states/madhavpur.html",
+        "diu beach": "states/diu.html",
+        "west bengal beaches": "states/westbengal.html",
+        "digha beach": "states/digha.html",
+        "mandarmani beach": "states/mandarmani.html",
+        "tajpur beach": "states/tajpur.html",
+        "odisha beaches": "states/odisha.html",
+        "puri beach": "states/puri.html",
+        "chandrabhaga beach": "states/chandra.html",
+        "gopalpur beach": "states/gopalpur.html"
+};
+
+async function sendMessage() {
+  const input = document.getElementById("userInput");
+  const userText = input.value.trim();
+  if (!userText) return;
+
+  addMessage("user", userText);
+  input.value = "";
+  addMessage("bot", "⏳ Typing…");
+
+  try {
+    const res = await fetch("http://localhost:3000/ask", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: userText })
+    });
+
+    const data = await res.json();
+    const reply = data.reply;
+    replaceLastBotMessage(reply);
+
+    // ⛏️ Match exact beach names in response
+    const lowerReply = reply.toLowerCase();
+    let matchedBeach = null;
+
+    for (let beach in beachPages) {
+      const regex = new RegExp(`\\b${beach}\\b`, 'i'); // match exact beach name
+      if (regex.test(lowerReply)) {
+        matchedBeach = beach;
+        break;
+      }
+    }
+
+    if (matchedBeach) {
+      const url = beachPages[matchedBeach];
+      if (window.parent?.openInfoPopup) {
+        window.parent.resetInfoPopup?.();
+        window.parent.openInfoPopup(url);
+      }
+    } else {
+      // No known beach found in reply → open notfound.html
+      if (window.parent?.openInfoPopup) {
+        window.parent.resetInfoPopup?.();
+        window.parent.openInfoPopup("public/notfound.html");
+      }
+    }
+
+  } catch (err) {
+    replaceLastBotMessage("⚠️ Sorry – I couldn’t reach the server.");
+  }
+}
+
+function addMessage(sender, text) {
+  const box = document.getElementById("messages");
+  const div = document.createElement("div");
+  div.className = `msg ${sender}`;
+  div.innerText = text;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+function replaceLastBotMessage(newText) {
+  const box = document.getElementById("messages");
+  const last = box.lastChild;
+  if (last && last.classList.contains("bot")) last.innerText = newText;
+}
+
+window.addEventListener("message", e => {
+  if (e.data?.type === "beachContent") {
+    replaceLastBotMessage(e.data.content);
+  }
+});
+
+function closeChatbot() {
+  window.parent.postMessage({ type: "hideChatbot" }, "*");
+}
+</script>
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Signup</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #e0f7fa;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .form-box {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      width: 300px;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    button {
+      width: 100%;
+      background: #0077b6;
+      color: white;
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+    button:hover {
+      background: #005f8f;
+    }
+  </style>
+</head>
+<body>
+  <div class="form-box">
+    <h2>Signup</h2>
+    <input type="email" id="signup-email" placeholder="Email" required />
+    <input type="password" id="signup-password" placeholder="Password" required />
+    <input type="password" name="confirm_password" placeholder="Confirm Password" required />
+    <button onclick="signup()">Create Account</button>
+    <p>Already have an account? <a href="login.html">Login</a></p>
+  </div>
+
+ <script>
+  async function signup() {
+    const email = document.getElementById("signup-email").value;
+    const password = document.getElementById("signup-password").value;
+    const confirmPassword = document.querySelector('[name="confirm_password"]').value;
+
+    if (!email || !password || !confirmPassword) {
+      alert("Please fill all fields.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      alert("Passwords do not match.");
+      return;
+    }
+
+    try {
+      const response = await fetch("http://localhost:3000/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
+
+      if (!response.ok) throw new Error("Registration failed");
+
+      alert("✅ Signup successful!");
+      localStorage.setItem("user_email", email);
+localStorage.setItem("loggedInUser", JSON.stringify({ email }));
+
+      window.location.href = "login.html";
+    } catch (err) {
+      alert("❌ Signup failed: " + err.message);
+    }
+  }
+</script>
+
+
+</body>
+</html>

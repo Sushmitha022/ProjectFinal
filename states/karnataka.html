@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Karnataka Memories</title>
+  <link rel="stylesheet" href="karnataka.css" />
+</head>
+<body>
+  <div class="hero-section">
+    <video
+      src="https://www.keralatourism.org/ktadmin/img/pages/video/memories-for-a-lifetime-1715763700_071e75dfcbd9d1f5467e.mp4"
+      autoplay
+      muted
+      loop
+      playsinline
+      preload="metadata"
+      class="bg-video"
+    ></video>
+
+    <div class="left-text">
+      <h1>Karnataka Beaches</h1>
+      <a href="/index.html#map-section">Go Back</a>
+    </div>
+
+    <div class="slider-container">
+      <div class="slider" id="slider">
+        <div class="slide">
+  <img src="Om.png" alt="Cuisine" />
+  <div class="caption">
+    <span>Om Beach</span>
+    <a href="om.html" class="explore-btn">Explore</a>
+  </div>
+</div>
+<div class="slide">
+  <img src="kudle.jpg" alt="Cuisine" />
+  <div class="caption">
+    <span>Kudle Beach</span>
+    <a href="kudle.html" class="explore-btn">Explore</a>
+  </div>
+</div>
+<div class="slide">
+  <img src="Malpe.jpg" alt="Cuisine" />
+  <div class="caption">
+    <span>Malpe Beach</span>
+    <a href="malpe.html" class="explore-btn">Explore</a>
+  </div>
+</div>
+
+        
+        <!-- Add more slides if needed -->
+      </div>
+
+      <div class="nav-buttons">
+        <button class="nav-button" onclick="slideLeft()">
+          <span>&lt;</span>
+        </button>
+        <button class="nav-button" onclick="slideRight()">
+          <span>&gt;</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

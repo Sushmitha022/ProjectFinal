@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Beach Itinerary Feedback</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f8ff;
+      padding: 20px;
+    }
+    .feedback-container {
+      max-width: 600px;
+      width: 100%;
+      margin: auto;
+      background: #fff;
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h2 {
+      text-align: center;
+      color: #0077b6;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 15px;
+    }
+    input, textarea, select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+    .stars {
+      display: flex;
+      gap: 5px;
+      margin-top: 10px;
+    }
+    .star {
+      font-size: 24px;
+      cursor: pointer;
+      color: lightgray;
+    }
+    .star.selected {
+      color: gold;
+    }
+    button {
+      background: #0077b6;
+      color: #fff;
+      padding: 12px;
+      margin-top: 20px;
+      border: none;
+      width: 100%;
+      font-size: 16px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #005f8f;
+    }
+    #response-msg {
+      margin-top: 15px;
+      font-weight: bold;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <script>
+    // 🔐 Login Check
+    const userEmail = localStorage.getItem('loggedInUser');
+if (!userEmail) {
+  alert('⚠️ Please login to submit feedback.');
+  window.location.href = '../login.html';  // Adjust path if needed
+}
+
+  </script>
+
+  <div class="feedback-container">
+    <h2>Share Your Feedback 📝</h2>
+    <form id="feedback-form">
+      <label for="email">Email (required)</label>
+      <input type="email" name="email" id="email" placeholder="you@example.com" required readonly />
+
+      <label>Rate your experience</label>
+      <div class="stars" id="starRating">
+        <span class="star" data-value="1">&#9733;</span>
+        <span class="star" data-value="2">&#9733;</span>
+        <span class="star" data-value="3">&#9733;</span>
+        <span class="star" data-value="4">&#9733;</span>
+        <span class="star" data-value="5">&#9733;</span>
+      </div>
+      <input type="hidden" name="rating" id="rating" required />
+
+      <label for="category">Feedback Type</label>
+      <select name="category" id="category">
+        <option>General Comment</option>
+        <option>Bug Report</option>
+        <option>Feature Request</option>
+        <option>Design Suggestion</option>
+      </select>
+
+      <label for="message">Feedback</label>
+      <textarea name="message" id="message" placeholder="Let us know your thoughts..." required></textarea>
+
+      <button type="submit">Submit Feedback</button>
+      <p id="response-msg"></p>
+    </form>
+  </div>
+
+  <script>
+    // Auto-fill email
+    document.getElementById('email').value = localStorage.getItem('loggedInUser') || '';
+
+
+    const stars = document.querySelectorAll('.star');
+    const ratingInput = document.getElementById('rating');
+    const form = document.getElementById('feedback-form');
+    const responseMsg = document.getElementById('response-msg');
+
+    stars.forEach(star => {
+      star.addEventListener('click', () => {
+        const rating = star.getAttribute('data-value');
+        ratingInput.value = rating;
+        stars.forEach(s => s.classList.remove('selected'));
+        for (let i = 0; i < rating; i++) {
+          stars[i].classList.add('selected');
+        }
+      });
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const email = document.getElementById('email').value.trim();
+      const rating = document.getElementById('rating').value;
+      const category = document.getElementById('category').value;
+      const message = document.getElementById('message').value.trim();
+
+      if (!email || !rating || !message) {
+        responseMsg.textContent = "⚠️ Please fill in all required fields.";
+        return;
+      }
+
+      const feedbackData = {
+        user_email: email,
+        rating: rating,
+        category: category,
+        message: message
+      };
+
+      try {
+        const response = await fetch('http://localhost:3000/feedback', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(feedbackData)
+        });
+
+        const text = await response.text();
+        if (response.ok) {
+          responseMsg.textContent = "✅ Feedback submitted successfully!";
+          form.reset();
+          stars.forEach(s => s.classList.remove('selected'));
+        } else {
+          responseMsg.textContent = "❌ " + text;
+        }
+      } catch (err) {
+        console.error(err);
+        responseMsg.textContent = "❌ Failed to submit feedback.";
+      }
+    });
+  </script>
+
+</body>
+</html>
