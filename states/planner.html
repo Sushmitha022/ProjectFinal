@@ -356,5 +356,26 @@ if (!userEmail) {
   });
 </script>
 
+<script>
+  function downloadPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    let itineraryText = document.getElementById("itinerary-preview").innerText;
+
+    // ✅ Remove emojis
+    itineraryText = itineraryText.replace(/[\u{1F300}-\u{1F6FF}|\u{1F900}-\u{1F9FF}|\u{2600}-\u{26FF}]/gu, "");
+
+    // ✅ Replace ₹ or superscript ¹ with Rs
+    itineraryText = itineraryText.replace(/₹|¹/g, "Rs ");
+
+    const lines = doc.splitTextToSize(itineraryText, 180);
+    doc.text(lines, 10, 10);
+    doc.save("Itinerary.pdf");
+  }
+</script>
+
+
+
 </body>
 </html>
